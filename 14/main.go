@@ -74,11 +74,7 @@ func moveRockEast(rock point, sRocks map[point]bool, maxX int) point {
 func part1(mRocks []point, sRocks map[point]bool, maxY int) int {
 	mRocks = moveRocks(mRocks, sRocks, sortNorth, moveRockNorth)
 
-	total := 0
-	for _, rock := range mRocks {
-		total += maxY - rock.y
-	}
-	return total
+	return calcRockLoad(mRocks, maxY)
 }
 
 func moveRocks(
@@ -127,11 +123,7 @@ func printRocks(mRocks []point, sRocks map[point]bool, maxX, maxY int) {
 	}
 }
 
-func part2(mRocks []point, sRocks map[point]bool, maxX int, maxY int) int {
-	for i := 0; i < 3; i++ {
-		mRocks = performCycle(mRocks, sRocks, maxX, maxY)
-	}
-	// printRocks(mRocks, sRocks, maxX, maxY)
+func calcRockLoad(mRocks []point, maxY int) int {
 	total := 0
 	for _, rock := range mRocks {
 		total += maxY - rock.y
@@ -139,9 +131,28 @@ func part2(mRocks []point, sRocks map[point]bool, maxX int, maxY int) int {
 	return total
 }
 
+func part2(mRocks []point, sRocks map[point]bool, maxX int, maxY int) int {
+	cycleCache := map[string]int{}
+	for i := 0; i < CYCLES; i++ {
+		mRocks = performCycle(mRocks, sRocks, maxX, maxY)
+		// this is cycle detection is pretty gross but it works
+		slices.SortStableFunc[[]point](mRocks, sortNorth)
+		if cycleIndex, ok := cycleCache[fmt.Sprint(mRocks)]; ok {
+			cycleDiff := i - cycleIndex
+			if (CYCLES-cycleIndex-1)%cycleDiff == 0 {
+				return calcRockLoad(mRocks, maxY)
+			}
+		} else {
+			cycleCache[fmt.Sprint(mRocks)] = i
+		}
+	}
+
+	return calcRockLoad(mRocks, maxY)
+}
+
 func main() {
 	start := time.Now()
-	file, err := os.Open("test.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
